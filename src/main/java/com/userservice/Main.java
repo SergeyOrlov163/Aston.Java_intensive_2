@@ -80,26 +80,27 @@ public class Main {
 
     private static void updateUser() {
         Long id = getLongInput("Enter user ID to update");
-        var userOpt = userDao.findById(id);
-        if (userOpt.isEmpty()) {
-            System.out.println("User not found with ID: " + id);
-            return;
-        }
 
-        User user = userOpt.get();
-        System.out.print("Enter new name (current: " + user.getName() + "): ");
+        System.out.print("Enter new name: ");
         String name = scanner.nextLine();
-        if (!name.trim().isEmpty()) user.setName(name);
 
-        System.out.print("Enter new email (current: " + user.getEmail() + "): ");
+        System.out.print("Enter new email: ");
         String email = scanner.nextLine();
-        if (!email.trim().isEmpty()) user.setEmail(email);
 
-        int age = getIntInput("Enter new age (current: " + user.getAge() + ")");
+        int age = getIntInput("Enter new age");
+
+        User user = new User();
+        user.setId(id);
+        user.setName(name);
+        user.setEmail(email);
         user.setAge(age);
 
-        userDao.update(user);
-        System.out.println("User updated: " + user);
+        try {
+            userDao.update(user);
+            System.out.println("User updated: " + user);
+        } catch (Exception e) {
+            System.out.println("Error updating user: " + e.getMessage());
+        }
     }
 
     private static void deleteUser() {
