@@ -31,16 +31,9 @@ public class User {
 
     @Builder
     public User(String name, String email, int age) {
-        this();
         this.name = name;
         this.email = email;
         this.age = age;
-    }
-
-    @PrePersist
-    protected void onCreate() {
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
-        }
+        createdAt = LocalDateTime.now();
     }
 }

@@ -9,7 +9,7 @@
         <property name="hibernate.connection.driver-class">org.postgresql.Driver</property>
         <property name="hibernate.connection.url">jdbc:postgresql://localhost:5432/userdb</property>
         <property name="hibernate.connection.username">postgres</property>
-        <property name="hibernate.connection.password">password</property>
+        <property name="hibernate.connection.password">postgre</property>
 
         <!-- JDBC connection pool (use the built-in) -->
         <property name="connection.pool_size">1</property>
@@ -27,7 +27,7 @@
         <property name="format_sql">true</property>
 
         <!-- Auto-create schema (create-drop, create, update, validate) -->
-        <property name="hibernate.hbm2ddl.auto">update</property>
+        <property name="hibernate.hbm2ddl.auto">validate</property>
 
         <!-- Annotated entity class -->
         <mapping class="com.userservice.model.User"/>
