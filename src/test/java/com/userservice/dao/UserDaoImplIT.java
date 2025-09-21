@@ -32,7 +32,6 @@ public class UserDaoImplIT {
     }
 
     @Test
-    @Order(1)
     void testSaveUser() {
         String email = generateUniqueEmail();
         User user = new User("Test User", email, 25);
@@ -46,7 +45,6 @@ public class UserDaoImplIT {
     }
 
     @Test
-    @Order(2)
     void testFindById() {
         User user = new User("Fred", generateUniqueEmail(), 30);
         User saved = userDao.save(user);
@@ -57,14 +55,12 @@ public class UserDaoImplIT {
     }
 
     @Test
-    @Order(3)
     void testFindByIdNotFound() {
         Optional<User> found = userDao.findById(999L);
         assertFalse(found.isPresent());
     }
 
     @Test
-    @Order(4)
     void testFindAll() {
         List<User> beforeTheChange = userDao.findAll();
         int size = beforeTheChange.size();
@@ -78,7 +74,6 @@ public class UserDaoImplIT {
     }
 
     @Test
-    @Order(5)
     void testUpdateUser() {
         String email = generateUniqueEmail();
         User user = new User("Original", email, 40);
@@ -100,7 +95,6 @@ public class UserDaoImplIT {
 
 
     @Test
-    @Order(6)
     void testDeleteUser() {
         User user = new User("ToDelete", generateUniqueEmail(), 50);
         User saved = userDao.save(user);
@@ -114,7 +108,6 @@ public class UserDaoImplIT {
 
 
     @Test
-    @Order(7)
     void testDeleteNotExistentUser() {
         assertDoesNotThrow(() -> userDao.deleteById(99999L));
     }

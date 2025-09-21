@@ -5,6 +5,7 @@ import com.userservice.model.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -40,7 +41,19 @@ public class UserServiceTest {
 
         assertNotNull(result);
         assertEquals("Test User", result.getName());
-        verify(userDao, times(1)).save(any(User.class));
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userDao, times(1)).save(userCaptor.capture());
+
+        User capturedUser = userCaptor.getValue();
+        assertNotNull(capturedUser);
+        assertEquals("Test User", capturedUser.getName());
+        assertEquals("test@mail.com", capturedUser.getEmail());
+        assertEquals(25, capturedUser.getAge());
+        assertNull(capturedUser.getId());
+        assertNotNull(capturedUser.getCreatedAt());
+
+        assertEquals(testUser, result);
     }
 
     @Test
