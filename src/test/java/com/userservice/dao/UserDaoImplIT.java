@@ -62,15 +62,19 @@ public class UserDaoImplIT {
 
     @Test
     void testFindAll() {
-        List<User> beforeTheChange = userDao.findAll();
-        int size = beforeTheChange.size();
+        User alice = new User("Alice", generateUniqueEmail(), 30);
+        User bob = new User("Bob", generateUniqueEmail(), 50);
+        User charlie = new User("Charlie", generateUniqueEmail(), 28);
 
-        userDao.save(new User("Alice", generateUniqueEmail(), 30));
-        userDao.save(new User("Bob", generateUniqueEmail(), 50));
-        userDao.save(new User("Charlie", generateUniqueEmail(), 28));
+        User savedAlice = userDao.save(alice);
+        User savedBob = userDao.save(bob);
+        User savedCharlie = userDao.save(charlie);
 
         List<User> users = userDao.findAll();
-        assertEquals(size + 3, users.size());
+
+        assertTrue(users.contains(savedAlice), "Alice not found in result");
+        assertTrue(users.contains(savedBob), "Bob not found in result");
+        assertTrue(users.contains(savedCharlie), "Charlie not found in result");
     }
 
     @Test
