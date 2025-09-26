@@ -2,6 +2,8 @@ package com.userservice.dao;
 
 import com.userservice.model.User;
 import com.userservice.util.TestHibernateUtil;
+import org.hibernate.Session;
+import org.hibernate.Transaction;
 import org.junit.jupiter.api.*;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -27,6 +29,15 @@ public class UserDaoImplIT {
         TestHibernateUtil.shutdown();
     }
 
+    @BeforeEach
+    void cleanDatabase() {
+        try (Session session = TestHibernateUtil.getSessionFactory().openSession()) {
+            Transaction tx = session.beginTransaction();
+            session.createMutationQuery("DELETE FROM User").executeUpdate();
+            tx.commit();
+        }
+    }
+
     private String generateUniqueEmail() {
         return "user_" + UUID.randomUUID() + "@mail.com";
     }
@@ -35,6 +46,7 @@ public class UserDaoImplIT {
     void testSaveUser() {
         String email = generateUniqueEmail();
         User user = new User("Test User", email, 25);
+
         User saved = userDao.save(user);
 
         assertNotNull(saved.getId());
@@ -42,16 +54,33 @@ public class UserDaoImplIT {
         assertEquals(email, saved.getEmail());
         assertEquals(25, saved.getAge());
         assertNotNull(saved.getCreatedAt());
+
+        try (Session session = TestHibernateUtil.getSessionFactory().openSession()) {
+            User fromDb = session.get(User.class, saved.getId());
+            assertNotNull(fromDb);
+            assertEquals(saved, fromDb);
+        }
     }
 
     @Test
     void testFindById() {
-        User user = new User("Fred", generateUniqueEmail(), 30);
-        User saved = userDao.save(user);
+        Long userId;
+        String email = generateUniqueEmail();
+        try (Session session = TestHibernateUtil.getSessionFactory().openSession()) {
+            Transaction tx = session.beginTransaction();
+            User user = new User("Fred", email, 30);
+            session.persist(user);
+            tx.commit();
+            userId = user.getId();
+        }
 
-        Optional<User> found = userDao.findById(saved.getId());
+        Optional<User> found = userDao.findById(userId);
+
         assertTrue(found.isPresent());
-        assertEquals(saved.getId(), found.get().getId());
+        assertEquals(userId, found.get().getId());
+        assertEquals("Fred", found.get().getName());
+        assertEquals(email, found.get().getEmail());
+        assertEquals(30, found.get().getAge());
     }
 
     @Test
@@ -62,52 +91,77 @@ public class UserDaoImplIT {
 
     @Test
     void testFindAll() {
-        User alice = new User("Alice", generateUniqueEmail(), 30);
-        User bob = new User("Bob", generateUniqueEmail(), 50);
-        User charlie = new User("Charlie", generateUniqueEmail(), 28);
+        try (Session session = TestHibernateUtil.getSessionFactory().openSession()) {
+            Transaction tx = session.beginTransaction();
 
-        User savedAlice = userDao.save(alice);
-        User savedBob = userDao.save(bob);
-        User savedCharlie = userDao.save(charlie);
+            User alice = new User("Alice", "alice_" + UUID.randomUUID() + "@mail.com", 30);
+            User bob = new User("Bob", "bob_" + UUID.randomUUID() + "@mail.com", 50);
+            User charlie = new User("Charlie", "charlie_" + UUID.randomUUID() + "@mail.com", 28);
+
+            session.persist(alice);
+            session.persist(bob);
+            session.persist(charlie);
+
+            tx.commit();
+        }
 
         List<User> users = userDao.findAll();
 
-        assertTrue(users.contains(savedAlice), "Alice not found in result");
-        assertTrue(users.contains(savedBob), "Bob not found in result");
-        assertTrue(users.contains(savedCharlie), "Charlie not found in result");
+        assertEquals(3, users.size(), "Expected exactly 3 users in database");
+
+        assertTrue(users.stream().anyMatch(u -> u.getName().equals("Alice")));
+        assertTrue(users.stream().anyMatch(u -> u.getName().equals("Bob")));
+        assertTrue(users.stream().anyMatch(u -> u.getName().equals("Charlie")));
     }
 
     @Test
     void testUpdateUser() {
+        Long userId;
         String email = generateUniqueEmail();
-        User user = new User("Original", email, 40);
-        User saved = userDao.save(user);
-        Long id = saved.getId();
+        try (Session session = TestHibernateUtil.getSessionFactory().openSession()) {
+            Transaction tx = session.beginTransaction();
+            User user = new User("Original", email, 40);
+            session.persist(user);
+            tx.commit();
+            userId = user.getId();
+        }
 
-        saved.setName("Updated");
         String updateEmail = generateUniqueEmail();
-        saved.setEmail(updateEmail);
-        saved.setAge(41);
 
-        User updated = userDao.update(saved);
+        User updated = userDao.update(new User(userId, "Updated", updateEmail, 41, null));
 
         assertEquals("Updated", updated.getName());
         assertEquals(updateEmail, updated.getEmail());
         assertEquals(41, updated.getAge());
-        assertEquals(id, updated.getId());
+        assertEquals(userId, updated.getId());
+
+        try (Session session = TestHibernateUtil.getSessionFactory().openSession()) {
+            User fromDb = session.get(User.class, userId);
+            assertNotNull(fromDb);
+            assertEquals("Updated", fromDb.getName());
+            assertEquals(updateEmail, fromDb.getEmail());
+            assertEquals(41, fromDb.getAge());
+        }
     }
 
 
     @Test
     void testDeleteUser() {
-        User user = new User("ToDelete", generateUniqueEmail(), 50);
-        User saved = userDao.save(user);
-        Long id = saved.getId();
+        Long userId;
+        try (Session session = TestHibernateUtil.getSessionFactory().openSession()) {
+            Transaction tx = session.beginTransaction();
+            User user = new User("ToDelete", generateUniqueEmail(), 50);
+            session.persist(user);
+            tx.commit();
+            userId = user.getId();
+        }
 
-        userDao.deleteById(id);
+        userDao.deleteById(userId);
 
-        Optional<User> deleted = userDao.findById(id);
-        assertFalse(deleted.isPresent());
+        try (Session session = TestHibernateUtil.getSessionFactory().openSession()) {
+            User fromDb = session.get(User.class, userId);
+            assertNull(fromDb, "User should be deleted");
+        }
     }
 
 
