@@ -5,6 +5,8 @@ import com.userservice.util.TestHibernateUtil;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.junit.jupiter.api.*;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.List;
@@ -14,18 +16,34 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Testcontainers
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class UserDaoImplIT {
+
+    @Container
+    private static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15.2")
+            .withDatabaseName("testdb")
+            .withUsername("test")
+            .withPassword("test");
 
     private static UserDao userDao;
 
     @BeforeAll
-    static void setUpAll() {
-        userDao = new UserDaoImpl();
+    void setUpAll() {
+        String jdbcUrl = postgres.getJdbcUrl();
+        if (jdbcUrl == null || jdbcUrl.isEmpty()) {
+            throw new IllegalStateException("PostgreSQL container did not start or JDBC URL is null");
+        }
+        System.out.println("✅ PostgreSQL URL: " + jdbcUrl);
+
+        System.setProperty("hibernate.connection.url", postgres.getJdbcUrl());
+        System.setProperty("hibernate.connection.username", postgres.getUsername());
+        System.setProperty("hibernate.connection.password", postgres.getPassword());
+
+        userDao = new UserDaoImpl(TestHibernateUtil.getSessionFactory());
     }
 
     @AfterAll
-    static void tearDownAll() {
+    void tearDownAll() {
         TestHibernateUtil.shutdown();
     }
 
@@ -58,7 +76,10 @@ public class UserDaoImplIT {
         try (Session session = TestHibernateUtil.getSessionFactory().openSession()) {
             User fromDb = session.get(User.class, saved.getId());
             assertNotNull(fromDb);
-            assertEquals(saved, fromDb);
+            assertEquals(saved.getId(), fromDb.getId());
+            assertEquals(saved.getName(), fromDb.getName());
+            assertEquals(saved.getEmail(), fromDb.getEmail());
+            assertEquals(saved.getAge(), fromDb.getAge());
         }
     }
 
@@ -84,7 +105,7 @@ public class UserDaoImplIT {
     }
 
     @Test
-    void testFindByIdNotFound() {
+    void testFindByIdNonFound() {
         Optional<User> found = userDao.findById(999L);
         assertFalse(found.isPresent());
     }
