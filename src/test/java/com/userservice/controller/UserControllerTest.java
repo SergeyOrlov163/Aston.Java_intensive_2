@@ -55,7 +55,7 @@ class UserControllerTest {
         assertEquals("John", actual.getName());
         assertEquals("john@example.com", actual.getEmail());
         assertEquals(30, actual.getAge());
-        assertNotNull(actual.getCreatedAt());
+        assertNotNull(actual.getCreateAt());
     }
 
     @Test
@@ -75,7 +75,7 @@ class UserControllerTest {
         assertEquals(expected.getName(), actual.getName());
         assertEquals(expected.getEmail(), actual.getEmail());
         assertEquals(expected.getAge(), actual.getAge());
-        assertEquals(expected.getCreatedAt(), actual.getCreatedAt());
+        assertEquals(expected.getCreateAt(), actual.getCreateAt());
     }
 
     @Test
