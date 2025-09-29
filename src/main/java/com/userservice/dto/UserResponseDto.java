@@ -16,13 +16,13 @@ public class UserResponseDto {
     private String name;
     private String email;
     private Integer age;
-    private LocalDateTime createAt;
+    private LocalDateTime createdAt;
 
     public UserResponseDto(User user) {
         this.id = user.getId();
         this.name = user.getName();
         this.email = user.getEmail();
         this.age = user.getAge();
-        this.createAt = user.getCreatedAt();
+        this.createdAt = user.getCreatedAt();
     }
 }
