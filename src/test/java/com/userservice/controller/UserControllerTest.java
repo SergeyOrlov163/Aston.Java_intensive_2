@@ -32,7 +32,7 @@ class UserControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockitoBean
+    @MockBean
     private UserService userService;
 
     @Test
