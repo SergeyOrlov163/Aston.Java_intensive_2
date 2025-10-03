@@ -3,7 +3,9 @@ package com.userservice.service;
 import com.userservice.dto.UserRequestDto;
 import com.userservice.dto.UserResponseDto;
 import com.userservice.entity.User;
+import com.userservice.event.UserEvent;
 import com.userservice.repository.UserRepository;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,9 +17,11 @@ import java.util.stream.Collectors;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final KafkaTemplate<String, UserEvent> kafkaTemplate;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, KafkaTemplate<String, UserEvent> kafkaTemplate) {
         this.userRepository = userRepository;
+        this.kafkaTemplate = kafkaTemplate;
     }
 
     public UserResponseDto createUser(UserRequestDto requestDto) {
@@ -27,6 +31,7 @@ public class UserService {
         user.setAge(requestDto.getAge());
 
         User savedUser = userRepository.save(user);
+        kafkaTemplate.send("user-events", new UserEvent("CREATE", user.getEmail()));
         return new UserResponseDto(savedUser);
     }
 
@@ -54,7 +59,12 @@ public class UserService {
         return new UserResponseDto(updatedUser);
     }
 
+    @Transactional
     public void deleteUser(Long id) {
-        userRepository.deleteById(id);
+        User user = userRepository.findById(id).orElse(null);
+        if (user != null){
+            userRepository.deleteById(id);
+            kafkaTemplate.send("user-events", new UserEvent("DELETE", user.getEmail()));
+        }
     }
 }
