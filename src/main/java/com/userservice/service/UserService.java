@@ -1,9 +1,12 @@
 package com.userservice.service;
 
+import com.userservice.controller.UserController;
 import com.userservice.dto.UserRequestDto;
 import com.userservice.dto.UserResponseDto;
 import com.userservice.entity.User;
 import com.userservice.repository.UserRepository;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,29 +23,62 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
-    public UserResponseDto createUser(UserRequestDto requestDto) {
+    public EntityModel<UserResponseDto> createUser(UserRequestDto requestDto) {
         User user = new User();
         user.setName(requestDto.getName());
         user.setEmail(requestDto.getEmail());
         user.setAge(requestDto.getAge());
 
         User savedUser = userRepository.save(user);
-        return new UserResponseDto(savedUser);
+        UserResponseDto dto = new UserResponseDto(
+                savedUser.getId(),
+                savedUser.getName(),
+                savedUser.getEmail(),
+                savedUser.getAge(),
+                savedUser.getCreatedAt()
+        );
+
+        dto.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(UserController.class).getUserById(savedUser.getId())).withSelfRel());
+        dto.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(UserController.class).getAllUsers()).withRel("users"));
+
+        return EntityModel.of(dto);
     }
 
-    public UserResponseDto getUserById(Long id) {
+    public EntityModel<UserResponseDto> getUserById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + id));
-        return new UserResponseDto(user);
+
+        UserResponseDto dto = new UserResponseDto(
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
+                user.getAge(),
+                user.getCreatedAt()
+        );
+
+        dto.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(UserController.class).getUserById(id)).withSelfRel());
+        dto.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(UserController.class).getAllUsers()).withRel("users"));
+
+        return EntityModel.of(dto);
     }
 
-    public List<UserResponseDto> getAllUsers() {
+    public List<EntityModel<UserResponseDto>> getAllUsers() {
         return userRepository.findAll().stream()
-                .map(UserResponseDto::new)
+                .map(user -> {
+                    UserResponseDto dto = new UserResponseDto(
+                            user.getId(),
+                            user.getName(),
+                            user.getEmail(),
+                            user.getAge(),
+                            user.getCreatedAt()
+                    );
+                    dto.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(UserController.class).getUserById(user.getId())).withSelfRel());
+                    return EntityModel.of(dto);
+                })
                 .collect(Collectors.toList());
     }
 
-    public UserResponseDto updateUser(Long id, UserRequestDto requestDto) {
+    public EntityModel<UserResponseDto> updateUser(Long id, UserRequestDto requestDto) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + id));
 
@@ -51,7 +87,18 @@ public class UserService {
         user.setAge(requestDto.getAge());
 
         User updatedUser = userRepository.save(user);
-        return new UserResponseDto(updatedUser);
+        UserResponseDto dto = new UserResponseDto(
+                updatedUser.getId(),
+                updatedUser.getName(),
+                updatedUser.getEmail(),
+                updatedUser.getAge(),
+                updatedUser.getCreatedAt()
+        );
+
+        dto.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(UserController.class).getUserById(id)).withSelfRel());
+        dto.add(WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(UserController.class).getAllUsers()).withRel("users"));
+
+        return EntityModel.of(dto);
     }
 
     public void deleteUser(Long id) {
