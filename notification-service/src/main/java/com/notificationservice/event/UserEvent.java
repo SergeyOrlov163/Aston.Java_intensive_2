@@ -1,5 +1,6 @@
 package com.notificationservice.event;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 @Data
@@ -7,6 +8,10 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class UserEvent {
+
+    @JsonProperty("operation")
     private String operation;
+
+    @JsonProperty("email")
     private String email;
 }

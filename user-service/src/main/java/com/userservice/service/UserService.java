@@ -1,5 +1,7 @@
 package com.userservice.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.userservice.dto.UserRequestDto;
 import com.userservice.dto.UserResponseDto;
 import com.userservice.entity.User;
@@ -17,11 +19,13 @@ import java.util.stream.Collectors;
 public class UserService {
 
     private final UserRepository userRepository;
-    private final KafkaTemplate<String, UserEvent> kafkaTemplate;
+    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final ObjectMapper objectMapper;
 
-    public UserService(UserRepository userRepository, KafkaTemplate<String, UserEvent> kafkaTemplate) {
+    public UserService(UserRepository userRepository, KafkaTemplate<String, String> kafkaTemplate, ObjectMapper objectMapper) {
         this.userRepository = userRepository;
         this.kafkaTemplate = kafkaTemplate;
+        this.objectMapper = objectMapper;
     }
 
     public UserResponseDto createUser(UserRequestDto requestDto) {
@@ -31,7 +35,13 @@ public class UserService {
         user.setAge(requestDto.getAge());
 
         User savedUser = userRepository.save(user);
-        kafkaTemplate.send("user-events", new UserEvent("CREATE", user.getEmail()));
+
+        try {
+            String event = objectMapper.writeValueAsString(new UserEvent("CREATE", user.getEmail()));
+            kafkaTemplate.send("user-events", event);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to send Kafka message", e);
+        }
         return new UserResponseDto(savedUser);
     }
 
@@ -64,7 +74,12 @@ public class UserService {
         User user = userRepository.findById(id).orElse(null);
         if (user != null){
             userRepository.deleteById(id);
-            kafkaTemplate.send("user-events", new UserEvent("DELETE", user.getEmail()));
+            try {
+                String event = objectMapper.writeValueAsString(new UserEvent("DELETE", user.getEmail()));
+                kafkaTemplate.send("user-events", event);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to send Kafka message", e);
+            }
         }
     }
 }
