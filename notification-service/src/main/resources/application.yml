@@ -1,7 +1,7 @@
-spring:
-  application:
-    name: notification-service
+server:
+  port: 0
 
+spring:
   mail:
     host: smtp.gmail.com
     port: 587
@@ -20,9 +20,6 @@ spring:
       group-id: notification-group
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-
-server:
-  port: 8081
 
 logging:
   level:
